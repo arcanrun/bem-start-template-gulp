@@ -49,6 +49,23 @@ var params = {
 gulp.task(sassTocss);
 gulp.task(images);
 gulp.task(js);
+gulp.task(connectVars);
+
+function connectVars(path){
+	var pathArr = path.split('/'); 
+	var fileName = pathArr.pop();
+	var pathOnly = pathArr.join('/');
+
+	
+	return multipipe(
+			gulp.src(path),
+			insert.prepend('@import "app/assets/vars/vars"\n'),
+			gulp.dest(pathOnly)
+
+		)
+		 .pipe(reload({ stream: true }));
+}
+
 function sassTocss() {
 		console.log('\t=== sassTocss ===');
 		return multipipe( gulp.src(['app/assets/fonts-style/**/*.sass', 'app/common.blocks/**/*.sass'], {since: gulp.lastRun('sassTocss')}),
@@ -79,22 +96,24 @@ function images(){
 	.pipe(gulp.dest(params.imagesOut));
 
 }
-function detectFirstRunCall(run, opt){
-  	if(opt == 1) {
-	  	if(run == 1){
-	  		// ЗАПАРАЛЕЛИТЬ!!!!
+function detectFirstRunCall(run, opt, path){
+
+  	if(opt == 1 && run == 1) {
+	  		
 	  		sassTocss();
 	  		images();
 	  		
-	  	}	
-	  }else{
-	  	if(run == 1){
-  		// ЗАПАРАЛЕЛИТЬ!!!!
-  		sassTocss();
-  		images();
-  		js();
-  	}
+	  }else if(opt == 2 && run == 1){
+
+	  		sassTocss();
+	  		images();
+	  		js();
+  		
+  		
+	  }else if(opt == 3 && run == 1){
+	  		connectVars(path);
 	  }
+
   	
   }
 function js(){
@@ -223,7 +242,9 @@ gulp.task('watch', function(){
 	watcherSass
 	  .on('add', function(path){
 	  	console.log('File', path, 'has been added');
+	  	detectFirstRunCall(params.detectFirstRun, 3, path);
 	  	detectFirstRunCall(params.detectFirstRun, 1);
+
 	  })
 	  .on('change', function(path){
 	  	console.log('File', path, 'has been changed');
